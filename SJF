@@ -1,0 +1,125 @@
+#include <stdio.h>
+
+// Structure to represent a process
+struct Process {
+    int pid;            // Process ID
+    int arrival_time;   // Arrival time of the process
+    int burst_time;     // Burst time of the process
+    int waiting_time;   // Waiting time of the process
+    int turnaround_time;// Turnaround time of the process
+};
+
+// Function to perform Shortest Job First (SJF) scheduling
+void sjfScheduling(struct Process processes[], int n) {
+    // Sort processes based on arrival time (for tie-breaking)
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - i - 1; j++) {
+            if (processes[j].arrival_time > processes[j + 1].arrival_time) {
+                struct Process temp = processes[j];
+                processes[j] = processes[j + 1];
+                processes[j + 1] = temp;
+            }
+        }
+    }
+
+    int current_time = 0; // Current time
+    int remaining_time[n]; // Remaining burst time for each process
+    int completed_processes = 0; // Number of completed processes
+
+    // Initialize remaining burst time for each process
+    for (int i = 0; i < n; i++) {
+        remaining_time[i] = processes[i].burst_time;
+    }
+
+    // Loop until all processes are completed
+    while (completed_processes < n) {
+        int shortest_job_index = -1;
+        int shortest_job_burst = 9999; // A large number as initial shortest job burst time
+
+        // Find the process with the shortest remaining burst time
+        for (int i = 0; i < n; i++) {
+            if (processes[i].arrival_time <= current_time && remaining_time[i] < shortest_job_burst && remaining_time[i] > 0) {
+                shortest_job_index = i;
+                shortest_job_burst = remaining_time[i];
+            }
+        }
+
+        // If no process is found (CPU is idle), increment current time
+        if (shortest_job_index == -1) {
+            current_time++;
+            continue;
+        }
+
+        // Update waiting time for the selected process
+        processes[shortest_job_index].waiting_time += current_time - processes[shortest_job_index].arrival_time;
+
+        // Reduce remaining burst time of the selected process
+        remaining_time[shortest_job_index]--;
+
+        // If burst time is zero, update turnaround time and increment completed processes count
+        if (remaining_time[shortest_job_index] == 0) {
+            completed_processes++;
+            processes[shortest_job_index].turnaround_time = current_time + 1 - processes[shortest_job_index].arrival_time;
+        }
+
+        // Move to the next time unit
+        current_time++;
+    }
+}
+
+// Function to calculate average waiting time and average turnaround time
+void calculateAverages(struct Process processes[], int n, float *avg_waiting_time, float *avg_turnaround_time) {
+    int total_waiting_time = 0, total_turnaround_time = 0;
+    // Calculate total waiting time and total turnaround time
+    for (int i = 0; i < n; i++) {
+        total_waiting_time += processes[i].waiting_time;
+        total_turnaround_time += processes[i].turnaround_time;
+    }
+    // Calculate average waiting time and average turnaround time
+    *avg_waiting_time = (float)total_waiting_time / n;
+    *avg_turnaround_time = (float)total_turnaround_time / n;
+}
+
+// Function to display the scheduling results
+void displayResults(struct Process processes[], int n, float avg_waiting_time, float avg_turnaround_time) {
+    printf("Process\t Arrival Time\t Burst Time\t Waiting Time\t Turnaround Time\n");
+    for (int i = 0; i < n; i++) {
+        printf("%d\t\t %d\t\t %d\t\t %d\t\t %d\n", processes[i].pid, processes[i].arrival_time,
+               processes[i].burst_time, processes[i].waiting_time, processes[i].turnaround_time);
+    }
+    printf("Average Waiting Time: %.2f\n", avg_waiting_time);
+    printf("Average Turnaround Time: %.2f\n", avg_turnaround_time);
+}
+
+int main() {
+    // Number of processes
+    int n;
+    printf("Enter the number of processes: ");
+    scanf("%d", &n);
+
+    // Array to store information about each process
+    struct Process processes[n];
+
+    // Input arrival time and burst time for each process
+    printf("Enter arrival time and burst time for each process:\n");
+    for (int i = 0; i < n; i++) {
+        processes[i].pid = i + 1;
+        printf("Process %d:\n", i + 1);
+        printf("Arrival Time: ");
+        scanf("%d", &processes[i].arrival_time);
+        printf("Burst Time: ");
+        scanf("%d", &processes[i].burst_time);
+    }
+
+    // Perform SJF scheduling
+    sjfScheduling(processes, n);
+
+    // Calculate average waiting time and average turnaround time
+    float avg_waiting_time, avg_turnaround_time;
+    calculateAverages(processes, n, &avg_waiting_time, &avg_turnaround_time);
+
+    // Display the scheduling results
+    displayResults(processes, n, avg_waiting_time, avg_turnaround_time);
+
+    return 0;
+}
